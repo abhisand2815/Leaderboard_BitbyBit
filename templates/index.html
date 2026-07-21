@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Activity Leaderboard</title>
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Background Decorative Glows -->
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
+        <div class="bg-glow bg-glow-3"></div>
+
+        <!-- System Notification Banner (Shows when sheet is restricted or errors occur) -->
+        <div id="status-banner" class="status-banner hidden">
+            <div class="banner-content">
+                <div class="banner-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>
+                </div>
+                <div class="banner-text">
+                    <h4 id="banner-title">Google Sheet Connection Required</h4>
+                    <p id="banner-desc">The provided Google Sheet is private or requires authorization. Using offline Demo Mode.</p>
+                </div>
+                <div class="banner-actions">
+                    <button class="btn btn-sm btn-outline" id="btn-show-instructions">How to Share</button>
+                    <button class="btn-close" id="btn-close-banner">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Share Instructions Checklist -->
+            <div id="share-instructions" class="share-instructions-panel hidden">
+                <h5>How to configure Google Sheet for Real-Time Sync:</h5>
+                <ol class="setup-steps">
+                    <li>Open your Google Sheet: <a id="sheet-link-helper" href="#" target="_blank" class="text-link">Open Sheet <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a></li>
+                    <li>Click the blue <strong>Share</strong> button in the top right corner.</li>
+                    <li>Under "General Access", click on the dropdown that says <strong>Restricted</strong>.</li>
+                    <li>Change it to <strong>"Anyone with the link can view"</strong> (or view/comment).</li>
+                    <li>Copy the URL from your browser's address bar and paste it in the **Leaderboard Settings**.</li>
+                </ol>
+                <div class="setup-note">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-inline"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 16v-4M12 8h.01"/></svg>
+                    <span>This does not make your sheet searchable on Google, it only allows people with the exact link to read its data.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Header -->
+        <header class="main-header">
+            <div class="header-logo-group">
+                <div class="logo-icon-container">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="app-title">Activity Leaderboard</h1>
+                    <p class="app-subtitle" id="connection-status-text">Synchronized with Google Sheets</p>
+                </div>
+            </div>
+
+            <!-- Sync Indicator & Actions -->
+            <div class="header-controls">
+                <div id="sync-indicator" class="sync-indicator">
+                    <div class="progress-ring-container">
+                        <svg class="progress-ring" width="36" height="36">
+                            <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.08)" stroke-width="3" fill="transparent" r="15" cx="18" cy="18"/>
+                            <circle id="progress-ring-bar" class="progress-ring-bar" stroke="var(--blue-light)" stroke-width="3" fill="transparent" r="15" cx="18" cy="18"/>
+                        </svg>
+                        <div id="countdown-text" class="countdown-text">10</div>
+                    </div>
+                    <span id="sync-status-msg" class="sync-status-msg">Next update in 10s</span>
+                </div>
+                <button class="btn btn-primary" id="btn-sync-now" title="Force Sync Now">
+                    <svg class="icon-sync" id="sync-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    <span>Sync Now</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- TOP 3 PODIUM HERO SECTION -->
+        <section class="podium-section" id="podium-container">
+            <!-- 2nd Place (Left) -->
+            <div class="podium-card rank-2" id="podium-rank-2">
+                <div class="podium-badge-wrapper">
+                    <span class="podium-rank-number">2</span>
+                </div>
+                <div class="podium-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v-2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                </div>
+                <h3 class="podium-name" id="podium-name-2">-</h3>
+                <div class="podium-score">
+                    <span class="score-value" id="podium-score-2">0</span>
+                    <span class="score-label">submissions</span>
+                </div>
+                <button class="btn btn-text btn-view-entries" data-rank="2" id="podium-btn-2">View entries</button>
+                <div class="podium-pedestal"></div>
+            </div>
+
+            <!-- 1st Place (Center) -->
+            <div class="podium-card rank-1" id="podium-rank-1">
+                <div class="crown-badge">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 4l3 5 7-6 7 6 3-5-4 13H6L2 4z"/></svg>
+                </div>
+                <div class="podium-badge-wrapper">
+                    <span class="podium-rank-number">1</span>
+                </div>
+                <div class="podium-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v-2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                </div>
+                <h3 class="podium-name" id="podium-name-1">-</h3>
+                <div class="podium-score">
+                    <span class="score-value" id="podium-score-1">0</span>
+                    <span class="score-label">submissions</span>
+                </div>
+                <button class="btn btn-text btn-view-entries" data-rank="1" id="podium-btn-1">View entries</button>
+                <div class="podium-pedestal">
+                    <div class="glow-effect"></div>
+                </div>
+            </div>
+
+            <!-- 3rd Place (Right) -->
+            <div class="podium-card rank-3" id="podium-rank-3">
+                <div class="podium-badge-wrapper">
+                    <span class="podium-rank-number">3</span>
+                </div>
+                <div class="podium-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v-2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                </div>
+                <h3 class="podium-name" id="podium-name-3">-</h3>
+                <div class="podium-score">
+                    <span class="score-value" id="podium-score-3">0</span>
+                    <span class="score-label">submissions</span>
+                </div>
+                <button class="btn btn-text btn-view-entries" data-rank="3" id="podium-btn-3">View entries</button>
+                <div class="podium-pedestal"></div>
+            </div>
+        </section>
+
+        <!-- MAIN CONTENT LIST AND SEARCH -->
+        <main class="leaderboard-card">
+            <!-- Table Action Bar -->
+            <div class="action-bar">
+                <div class="search-box-container">
+                    <svg class="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="search-input" placeholder="Search participant by name..." autocomplete="off">
+                    <button class="btn-clear hidden" id="btn-clear-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="stats-pills">
+                    <div class="stat-pill">
+                        <span class="stat-label">Total Participants:</span>
+                        <span class="stat-value" id="stat-total-users">0</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-label">Total Entries:</span>
+                        <span class="stat-value" id="stat-total-entries">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard List Header -->
+            <div class="leaderboard-table-header">
+                <div class="col-rank">Rank</div>
+                <div class="col-name">Name</div>
+                <div class="col-score">Submissions</div>
+                <div class="col-action">Details</div>
+            </div>
+
+            <!-- Leaderboard Items Container -->
+            <div class="leaderboard-list" id="leaderboard-items-list">
+                <!-- Rows will be injected here by Javascript -->
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading leaderboard statistics...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <p>Developed with Python Flask backend & Glassmorphic CSS frontend</p>
+        </footer>
+
+        <!-- SETTINGS PANEL DRAWER (LEFT SIDE) -->
+        <div id="settings-overlay" class="drawer-overlay hidden"></div>
+        <div id="settings-drawer" class="drawer drawer-left hidden">
+            <div class="drawer-header">
+                <h3>Leaderboard Configuration</h3>
+                <button class="btn-close" id="btn-close-settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="drawer-body">
+                <!-- Data Source Selection -->
+                <div class="form-group">
+                    <label class="form-label">Data Intake Mode</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="data_source" value="google_sheet" checked>
+                            <span class="radio-custom"></span>
+                            <span>Google Sheet Sync</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="data_source" value="csv_upload">
+                            <span class="radio-custom"></span>
+                            <span>Local CSV Upload</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Google Sheets Settings Section -->
+                <div id="google-sheet-settings" class="settings-sub-section">
+                    <div class="form-group">
+                        <label for="input-sheet-url" class="form-label">Google Sheets URL</label>
+                        <textarea id="input-sheet-url" rows="3" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/..."></textarea>
+                        <span class="form-help">Enter the edit or sharing URL. The GID parameter will be parsed automatically.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="select-name-column" class="form-label">Target Name Column</label>
+                        <select id="select-name-column" class="form-control">
+                            <option value="">Auto-Detect Column</option>
+                        </select>
+                        <span class="form-help">Determines which column contains the names/ids to aggregate.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-sync-interval" class="form-label">Auto-Sync Frequency (seconds)</label>
+                        <input type="number" id="input-sync-interval" class="form-control" min="3" max="3600" value="10">
+                    </div>
+                </div>
+
+                <!-- CSV Upload Settings Section -->
+                <div id="csv-upload-settings" class="settings-sub-section hidden">
+                    <div class="form-group">
+                        <label class="form-label">Upload CSV File</label>
+                        <div id="csv-drop-zone" class="csv-drop-zone">
+                            <svg class="icon-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                            </svg>
+                            <p class="drop-text">Drag & drop CSV file here or <span>browse</span></p>
+                            <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+                        </div>
+                        <div id="upload-status" class="upload-status-msg hidden"></div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-lg">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="checkbox-demo-mode">
+                        <span class="checkbox-custom"></span>
+                        <span>Force Demo Mode (Mock Data)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="drawer-footer">
+                <button class="btn btn-secondary w-full" id="btn-cancel-settings">Cancel</button>
+                <button class="btn btn-primary w-full" id="btn-save-settings">Save Changes</button>
+            </div>
+        </div>
+
+        <!-- DETAILS DRAWER (RIGHT SIDE) -->
+        <div id="details-overlay" class="drawer-overlay hidden"></div>
+        <div id="details-drawer" class="drawer drawer-right hidden">
+            <div class="drawer-header">
+                <h3>Submission Logs</h3>
+                <button class="btn-close" id="btn-close-details">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="drawer-body">
+                <!-- User Profile Header -->
+                <div class="user-details-card">
+                    <div class="user-avatar-lg">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v-2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                    </div>
+                    <div class="user-meta-info">
+                        <h4 id="detail-display-name">-</h4>
+                        <div class="user-stats">
+                            <div class="user-stat-item">
+                                <span class="lbl">Rank</span>
+                                <span class="val" id="detail-rank">-</span>
+                            </div>
+                            <div class="user-divider"></div>
+                            <div class="user-stat-item">
+                                <span class="lbl">Submissions</span>
+                                <span class="val text-blue" id="detail-submissions">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Casing Normalization Breakdown -->
+                <div class="details-section">
+                    <h5>Casing Variation Aggregation</h5>
+                    <div class="casing-tags" id="detail-casing-tags">
+                        <!-- Tags will be injected -->
+                    </div>
+                </div>
+
+                <!-- Entry History Timeline -->
+                <div class="details-section">
+                    <h5>Submission History</h5>
+                    <div class="timeline" id="detail-timeline">
+                        <!-- Timeline items injected -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FLOATING SETTINGS TRIGGER -->
+        <button id="floating-settings-btn" class="floating-settings-btn" title="Open Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+    </div>
+
+    <!-- Main Application Script -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
